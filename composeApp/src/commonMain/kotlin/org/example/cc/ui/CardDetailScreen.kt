@@ -16,6 +16,8 @@ import kotlinx.coroutines.delay
 import org.example.cc.domain.CreditCard
 import org.example.cc.hardware.SensorEvent
 
+import org.example.cc.ui.platform.CCBackHandler
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
@@ -25,6 +27,11 @@ fun CardDetailScreen(
     onSaveNotes: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Hardware Back Handling
+    CCBackHandler {
+        onBack()
+    }
+
     var notes by remember { mutableStateOf(card.notes) }
 
     // Auto-save logic with debounce

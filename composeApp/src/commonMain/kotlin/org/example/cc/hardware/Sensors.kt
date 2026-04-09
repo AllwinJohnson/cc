@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.StateFlow
 data class ScannedCardResult(
     val number: String, 
     val expiryDate: String,
-    val bankName: String? = null
+    val bankName: String? = null,
+    val cvv: String? = null
 )
 
 interface CardScannerEngine {

@@ -36,6 +36,8 @@ class CardAnalyzer(
     private val cardNumberRegex = Regex("\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}")
     // Regex for Expiry Date (MM/YY)
     private val expiryRegex = Regex("(0[1-9]|1[0-2])\\/([0-9]{2})")
+    // Regex for CVV (3 or 4 digits)
+    private val cvvRegex = Regex("\\b\\d{3,4}\\b")
 
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
@@ -48,12 +50,21 @@ class CardAnalyzer(
                     
                     val foundNumber = cardNumberRegex.find(allText)?.value?.replace(Regex("[\\s-]"), "")
                     val foundExpiry = expiryRegex.find(allText)?.value
-                    
-                    // Simple bank name extraction: take the first line if it's not a number/date
                     val potentialBankName = visionText.textBlocks.firstOrNull()?.text?.split("\n")?.firstOrNull()
                     
+                    // Filter CVV candidates: must be 3-4 digits and NOT part of a longer digit string
+                    val foundCvv = cvvRegex.findAll(allText)
+                        .map { it.value }
+                        .firstOrNull { cvv -> 
+                            // Ensure it's not actually part of the card number
+                            foundNumber == null || !foundNumber.contains(cvv) 
+                        }
+                    
                     if (foundNumber != null && isLuhnValid(foundNumber) && foundExpiry != null) {
-                        onResult(ScannedCardResult(foundNumber, foundExpiry, potentialBankName))
+                        onResult(ScannedCardResult(foundNumber, foundExpiry, potentialBankName, foundCvv))
+                    } else if (foundCvv != null) {
+                        // Emit partial result if only CVV is found (Back Scan Mode)
+                        onResult(ScannedCardResult("", "", null, foundCvv))
                     }
                 }
                 .addOnCompleteListener {

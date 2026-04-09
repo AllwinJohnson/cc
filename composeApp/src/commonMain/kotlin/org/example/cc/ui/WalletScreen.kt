@@ -129,9 +129,9 @@ fun WalletScreen(
 
         // Version Footer
         Text(
-            text = "v0.3.0-alpha | Phase 3",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+            text = "v0.4.0-alpha | Phase 4",
+            style = SiltAndStone.Typography().bodySmall,
+            color = SiltAndStone.OnBackground.copy(alpha = 0.5f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -160,14 +160,15 @@ fun WalletScreen(
                                 
                                 val state = scannerViewModel.uiState.value
                                 if (state is ScannerUiState.Success) {
+                                    val finalCard = state.card
                                     scope.launch {
                                         val dummyCard = CreditCard(
                                             id = Random.nextInt().toString(),
-                                            cardNumber = result.number,
+                                            cardNumber = finalCard.number,
                                             cardholderName = "Scanned Card",
-                                            expiryDate = result.expiryDate,
-                                            cvv = "###",
-                                            bankName = org.example.cc.domain.BankMatcher.match(result.bankName ?: "Detected Bank"),
+                                            expiryDate = finalCard.expiryDate,
+                                            cvv = finalCard.cvv ?: "###",
+                                            bankName = org.example.cc.domain.BankMatcher.match(finalCard.bankName ?: "Detected Bank"),
                                             network = org.example.cc.domain.CardNetwork.VISA,
                                             type = org.example.cc.domain.CardType.CREDIT,
                                             accentColorHex = "#222222",
@@ -202,7 +203,7 @@ fun WalletScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (currentScanSide == ScanSide.FRONT) "SCAN FRONT" else "SCAN BACK",
+                                text = if (currentScanSide == ScanSide.FRONT) "SCAN FRONT" else "FLIP CARD",
                                 style = SiltAndStone.Typography().headlineMedium,
                                 color = SiltAndStone.OnPrimary
                             )

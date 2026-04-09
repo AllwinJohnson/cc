@@ -28,15 +28,7 @@ fun HolographicCard(
         modifier = modifier
             .aspectRatio(SiltAndStone.AspectRatio)
             .clip(RoundedCornerShape(SiltAndStone.CardCornerRadius.dp))
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        SiltAndStone.Primary,
-                        SiltAndStone.Secondary,
-                        SiltAndStone.PrimaryContainer
-                    )
-                )
-            )
+            .background(SiltAndStone.Primary)
             .border(
                 width = 1.dp,
                 color = SiltAndStone.OutlineVariant,
@@ -69,8 +61,7 @@ fun HolographicCard(
                     modifier = Modifier
                         .size(40.dp, 30.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color.White.copy(alpha = 0.2f))
-                        .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                        .background(SiltAndStone.SurfaceContainerHighest)
                 )
             }
 
@@ -100,7 +91,9 @@ fun HolographicCard(
                             text = card.cardholderName.uppercase(),
                             color = SiltAndStone.OnPrimary,
                             style = SiltAndStone.Typography().bodyMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp,
+                            fontFamily = SiltAndStone.SpaceGroteskFamily()
                         )
                     }
                     
