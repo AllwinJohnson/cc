@@ -8,12 +8,16 @@ CREATE TABLE SavedCardEntity (
     network TEXT NOT NULL,
     type TEXT NOT NULL,
     accentColorHex TEXT NOT NULL,
-    isDetailsOnBack INTEGER NOT NULL
+    isDetailsOnBack INTEGER NOT NULL,
+    notes TEXT NOT NULL DEFAULT ''
 );
 
 insertCard:
-INSERT OR REPLACE INTO SavedCardEntity(id, cardNumber, cardholderName, expiryDate, cvv, bankName, network, type, accentColorHex, isDetailsOnBack)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO SavedCardEntity(id, cardNumber, cardholderName, expiryDate, cvv, bankName, network, type, accentColorHex, isDetailsOnBack, notes)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateCardNotes:
+UPDATE SavedCardEntity SET notes = ? WHERE id = ?;
 
 getAllCards:
 SELECT * FROM SavedCardEntity;

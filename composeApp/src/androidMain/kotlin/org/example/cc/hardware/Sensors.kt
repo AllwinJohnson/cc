@@ -49,8 +49,11 @@ class CardAnalyzer(
                     val foundNumber = cardNumberRegex.find(allText)?.value?.replace(Regex("[\\s-]"), "")
                     val foundExpiry = expiryRegex.find(allText)?.value
                     
+                    // Simple bank name extraction: take the first line if it's not a number/date
+                    val potentialBankName = visionText.textBlocks.firstOrNull()?.text?.split("\n")?.firstOrNull()
+                    
                     if (foundNumber != null && isLuhnValid(foundNumber) && foundExpiry != null) {
-                        onResult(ScannedCardResult(foundNumber, foundExpiry))
+                        onResult(ScannedCardResult(foundNumber, foundExpiry, potentialBankName))
                     }
                 }
                 .addOnCompleteListener {

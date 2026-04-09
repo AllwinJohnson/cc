@@ -1,14 +1,17 @@
 package org.example.cc.ui
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.example.cc.domain.CardNetwork
@@ -34,6 +37,7 @@ fun WalletScreen(
     val scannerState by scannerViewModel.uiState.collectAsState()
     
     var showScanner by remember { mutableStateOf(false) }
+    var selectedCard by remember { mutableStateOf<CreditCard?>(null) }
     val scope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
@@ -52,29 +56,73 @@ fun WalletScreen(
             }
         }
 
-        Scaffold(
-            topBar = {
-                TopAppBar(title = { Text("Holographic Wallet") })
-            },
-            floatingActionButton = floatingActionButton
-        ) { paddingValues ->
-            LazyColumn(
-                contentPadding = paddingValues,
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(cards) { card ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .holographicTilt(sensorEvent)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Card: ${card.cardNumber}", style = MaterialTheme.typography.titleMedium)
-                            Text("Bank: ${card.bankName}", style = MaterialTheme.typography.bodyMedium)
+        AnimatedContent(
+            targetState = selectedCard,
+            transitionSpec = {
+                // Custom 3D-like transition: Slide and Rotate
+                (fadeIn() + slideInVertically { it / 2 }) togetherWith
+                (fadeOut() + slideOutVertically { -it / 2 })
+            }
+        ) { targetCard ->
+            if (targetCard == null) {
+                Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            title = { 
+                                Text("WALLET", style = SiltAndStone.Typography().displaySmall) 
+                            },
+                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                containerColor = SiltAndStone.Background
+                            )
+                        )
+                    },
+                    bottomBar = {
+                        // Silt & Stone "Connected Pill" Bottom Nav
+                        Surface(
+                            modifier = Modifier
+                                .padding(24.dp)
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .clip(RoundedCornerShape(32.dp)),
+                            color = SiltAndStone.PrimaryContainer,
+                            tonalElevation = 8.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Scan Button
+                                Button(
+                                    onClick = { showScanner = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SiltAndStone.Primary),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("NEW CARD", style = SiltAndStone.Typography().labelLarge)
+                                }
+                            }
                         }
-                    }
+                    },
+                    containerColor = SiltAndStone.Background
+                ) { paddingValues ->
+                    CylinderStack(
+                        cards = cards,
+                        sensorEvent = sensorEvent,
+                        onCardClick = { selectedCard = it },
+                        modifier = Modifier.padding(paddingValues)
+                    )
                 }
+            } else {
+                CardDetailScreen(
+                    card = targetCard,
+                    sensorEvent = sensorEvent,
+                    onBack = { selectedCard = null },
+                    onSaveNotes = { newNotes ->
+                        repository.updateNotes(targetCard.id, newNotes)
+                    }
+                )
             }
         }
 
@@ -109,14 +157,16 @@ fun WalletScreen(
                                     cardholderName = "Scanned Card",
                                     expiryDate = result.expiryDate,
                                     cvv = "###",
-                                    bankName = "Detected Bank",
-                                    network = CardNetwork.VISA,
-                                    type = CardType.CREDIT,
+                                    bankName = org.example.cc.domain.BankMatcher.match(result.bankName ?: "Detected Bank"),
+                                    network = org.example.cc.domain.CardNetwork.VISA,
+                                    type = org.example.cc.domain.CardType.CREDIT,
                                     accentColorHex = "#222222",
-                                    isDetailsOnBack = false
+                                    isDetailsOnBack = false,
+                                    notes = ""
                                 )
                                 repository.insertCard(dummyCard)
                                 showScanner = false
+                                selectedCard = dummyCard // Immediately navigate to details
                             }
                         },
                         modifier = Modifier.fillMaxSize()
