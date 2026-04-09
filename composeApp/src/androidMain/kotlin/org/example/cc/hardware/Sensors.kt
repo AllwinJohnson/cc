@@ -8,9 +8,9 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+import android.hardware.display.DisplayManager
+import android.view.Display
 import android.view.Surface
-import android.view.WindowManager
-import android.os.Build
 
 class AndroidCardScannerEngine : CardScannerEngine {
     override suspend fun scanCard(): ScannedCardResult? = null
@@ -18,6 +18,7 @@ class AndroidCardScannerEngine : CardScannerEngine {
 
 class AndroidHardwareSensorEngine(private val context: Context) : HardwareSensorEngine, SensorEventListener {
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
     private val _sensorEvents = MutableStateFlow(SensorEvent(0f, 0f, 0f))
@@ -43,14 +44,8 @@ class AndroidHardwareSensorEngine(private val context: Context) : HardwareSensor
             val rotationMatrix = FloatArray(9)
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
             
-            // Handle coordinate remapping for Landscape support
-            val rotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                context.display?.rotation ?: Surface.ROTATION_0
-            } else {
-                val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                @Suppress("DEPRECATION")
-                wm.defaultDisplay.rotation
-            }
+            // Safely get display rotation from any context using DisplayManager
+            val rotation = displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
 
             var axisX = SensorManager.AXIS_X
             var axisY = SensorManager.AXIS_Y
