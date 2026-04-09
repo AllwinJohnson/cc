@@ -14,6 +14,7 @@ import kotlinx.datetime.Clock
 import org.example.cc.domain.CardNetwork
 import org.example.cc.domain.CardType
 import org.example.cc.domain.CreditCard
+import org.example.cc.hardware.HardwareSensorEngine
 import org.example.cc.domain.WalletRepository
 import org.koin.compose.koinInject
 import kotlin.random.Random
@@ -21,9 +22,20 @@ import kotlin.random.nextInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WalletScreen(repository: WalletRepository = koinInject()) {
+fun WalletScreen(
+    repository: WalletRepository = koinInject(),
+    sensorEngine: HardwareSensorEngine = koinInject()
+) {
     val cards by repository.getAllCards().collectAsState(initial = emptyList())
+    val sensorEvent by sensorEngine.sensorEvents.collectAsState()
     val scope = rememberCoroutineScope()
+
+    DisposableEffect(Unit) {
+        sensorEngine.startListening()
+        onDispose {
+            sensorEngine.stopListening()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -55,10 +67,14 @@ fun WalletScreen(repository: WalletRepository = koinInject()) {
         LazyColumn(
             contentPadding = paddingValues,
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(cards) { card ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .holographicTilt(sensorEvent)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Card: ${card.cardNumber}", style = MaterialTheme.typography.titleMedium)
                         Text("Bank: ${card.bankName}", style = MaterialTheme.typography.bodyMedium)

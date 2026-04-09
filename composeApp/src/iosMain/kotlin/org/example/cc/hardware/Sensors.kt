@@ -8,6 +8,9 @@ class IosCardScannerEngine : CardScannerEngine {
 }
 
 class IosHardwareSensorEngine : HardwareSensorEngine {
-    private val _tiltData = MutableStateFlow(TiltData(0f, 0f))
-    override val tiltData: StateFlow<TiltData> = _tiltData
+    private val _sensorEvents = MutableStateFlow(SensorEvent(0f, 0f, 0f))
+    override val sensorEvents: StateFlow<SensorEvent> = _sensorEvents
+
+    override fun startListening() {}
+    override fun stopListening() {}
 }

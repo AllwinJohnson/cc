@@ -12,5 +12,5 @@ import org.koin.dsl.module
 actual fun platformModule(): Module = module {
     single<DatabaseDriverFactory> { AndroidDatabaseDriverFactory(get()) }
     single<CardScannerEngine> { AndroidCardScannerEngine() }
-    single<HardwareSensorEngine> { AndroidHardwareSensorEngine() }
+    single<HardwareSensorEngine> { AndroidHardwareSensorEngine(get()) }
 }

@@ -1,5 +1,10 @@
 package org.example.cc.hardware
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent as AndroidSensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -7,7 +12,52 @@ class AndroidCardScannerEngine : CardScannerEngine {
     override suspend fun scanCard(): ScannedCardResult? = null
 }
 
-class AndroidHardwareSensorEngine : HardwareSensorEngine {
-    private val _tiltData = MutableStateFlow(TiltData(0f, 0f))
-    override val tiltData: StateFlow<TiltData> = _tiltData
+class AndroidHardwareSensorEngine(context: Context) : HardwareSensorEngine, SensorEventListener {
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+
+    private val _sensorEvents = MutableStateFlow(SensorEvent(0f, 0f, 0f))
+    override val sensorEvents: StateFlow<SensorEvent> = _sensorEvents
+
+    private val alpha = 0.15f
+    private var currentPitch = 0f
+    private var currentRoll = 0f
+    private var currentYaw = 0f
+
+    override fun startListening() {
+        rotationSensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+        }
+    }
+
+    override fun stopListening() {
+        sensorManager.unregisterListener(this)
+    }
+
+    override fun onSensorChanged(event: AndroidSensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
+            val rotationMatrix = FloatArray(9)
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+            val orientation = FloatArray(3)
+            SensorManager.getOrientation(rotationMatrix, orientation)
+
+            // orientation[0] = azimuth (yaw), [1] = pitch, [2] = roll
+            val yaw = orientation[0]
+            val pitch = orientation[1]
+            val roll = orientation[2]
+
+            // Low-pass filter (Alpha smoothing)
+            currentPitch = currentPitch + alpha * (pitch - currentPitch)
+            currentRoll = currentRoll + alpha * (roll - currentRoll)
+            currentYaw = currentYaw + alpha * (yaw - currentYaw)
+
+            _sensorEvents.value = SensorEvent(
+                pitch = currentPitch,
+                roll = currentRoll,
+                yaw = currentYaw
+            )
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }

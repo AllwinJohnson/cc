@@ -8,8 +8,10 @@ interface CardScannerEngine {
     suspend fun scanCard(): ScannedCardResult?
 }
 
-data class TiltData(val roll: Float, val pitch: Float)
+data class SensorEvent(val pitch: Float, val roll: Float, val yaw: Float)
 
 interface HardwareSensorEngine {
-    val tiltData: StateFlow<TiltData>
+    val sensorEvents: StateFlow<SensorEvent>
+    fun startListening()
+    fun stopListening()
 }
