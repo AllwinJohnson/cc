@@ -33,3 +33,22 @@ in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and r
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+
+---
+
+## 📜 Changelog
+
+### [v0.2.0-alpha] - 2026-04-09
+**Phase 2: Sensor Fusion & Motion Engine**
+- **Hardware Sensor Layer**: Implemented `AndroidHardwareSensorEngine` using high-precision `TYPE_ROTATION_VECTOR`.
+- **Landscape Support**: Integrated coordinate remapping to handle device rotation dynamically.
+- **Anti-Gravity UI**: Created `Modifier.holographicTilt` with 3D transformations.
+- **Dynamic Specular Highlight**: Added a linear sheen gradient that reacts to device tilt.
+- **Smoothed Motion**: Implemented an Alpha-smoothing low-pass filter for a "weightless" feel.
+
+### [v0.1.0-alpha] - 2026-04-09
+**Phase 1: Enterprise Foundation**
+- **Project Scaffolding**: Configured KMP dependencies for SQLDelight, Koin, Coroutines, and Coil 3.
+- **Domain & Data**: Defined `CreditCard` domain models and implemented SQLDelight database.
+- **Hardware Interfaces**: Defined `CardScannerEngine` and `HardwareSensorEngine` interfaces.
+- **UI Scaffolding**: Built the initial `WalletScreen` with Koin DI integration.
