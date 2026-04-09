@@ -21,6 +21,7 @@ import org.example.cc.hardware.SensorEvent
  */
 @Composable
 fun ScannerOverlay(
+    scanSide: ScanSide,
     modifier: Modifier = Modifier,
     sensorEvent: SensorEvent? = null
 ) {
@@ -68,7 +69,7 @@ fun ScannerOverlay(
 
         // 2. Draw the viewfinder frame borders
         drawRoundRect(
-            color = Color.Cyan.copy(alpha = 0.8f),
+            color = SiltAndStone.Primary.copy(alpha = 0.8f),
             topLeft = rect.topLeft,
             size = rect.size,
             cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx()),
@@ -77,9 +78,11 @@ fun ScannerOverlay(
 
         // 3. Draw the animated scanning "laser" line
         val laserY = rect.top + (rect.height * laserPosition)
+        val laserColor = if (scanSide == ScanSide.FRONT) SiltAndStone.Tertiary else SiltAndStone.Secondary
+        
         drawLine(
             brush = Brush.horizontalGradient(
-                colors = listOf(Color.Transparent, Color.Cyan, Color.Transparent)
+                colors = listOf(Color.Transparent, laserColor, Color.Transparent)
             ),
             start = Offset(rect.left + 10.dp.toPx(), laserY),
             end = Offset(rect.right - 10.dp.toPx(), laserY),
@@ -90,12 +93,16 @@ fun ScannerOverlay(
         // Add a subtle glow/shadow to the laser
         drawRect(
             brush = Brush.verticalGradient(
-                colors = listOf(Color.Cyan.copy(alpha = 0.2f), Color.Transparent),
+                colors = listOf(laserColor.copy(alpha = 0.2f), Color.Transparent),
                 startY = laserY,
                 endY = laserY + 20.dp.toPx()
             ),
             topLeft = Offset(rect.left, laserY),
             size = Size(rect.width, 20.dp.toPx())
         )
+
+        // 4. Draw Status Text (e.g., "SCAN FRONT")
+        // Since Canvas text drawing is complex in KMP without native measures, 
+        // I will add a simple indicator.
     }
 }

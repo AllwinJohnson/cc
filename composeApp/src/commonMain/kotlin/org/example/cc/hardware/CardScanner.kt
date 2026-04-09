@@ -2,12 +2,17 @@ package org.example.cc.hardware
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import org.example.cc.ui.ScanSide
 
 /**
  * Platform-agnostic interface for the camera viewfinder.
  */
 @Composable
-expect fun CameraView(onCardScanned: (ScannedCardResult) -> Unit, modifier: Modifier)
+expect fun CameraView(
+    onCardScanned: (ScannedCardResult) -> Unit,
+    scanSide: ScanSide,
+    modifier: Modifier
+)
 
 /**
  * Validates a card number using the Luhn Algorithm.

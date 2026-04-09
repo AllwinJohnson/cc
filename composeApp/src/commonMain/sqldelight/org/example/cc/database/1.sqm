@@ -1,0 +1,2 @@
+-- migration from v1 to v2
+ALTER TABLE SavedCardEntity ADD COLUMN notes TEXT NOT NULL DEFAULT '';

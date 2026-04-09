@@ -2,7 +2,12 @@ package org.example.cc.hardware
 
 import kotlinx.coroutines.flow.StateFlow
 
-data class ScannedCardResult(val number: String, val expiryDate: String)
+data class ScannedCardResult(
+    val number: String, 
+    val expiryDate: String,
+    val bankName: String? = null,
+    val cvv: String? = null
+)
 
 interface CardScannerEngine {
     suspend fun scanCard(): ScannedCardResult?

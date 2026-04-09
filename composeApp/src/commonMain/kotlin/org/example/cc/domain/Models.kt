@@ -18,5 +18,6 @@ data class CreditCard(
     val network: CardNetwork,
     val type: CardType,
     val accentColorHex: String,
-    val isDetailsOnBack: Boolean
+    val isDetailsOnBack: Boolean,
+    val notes: String = ""
 )

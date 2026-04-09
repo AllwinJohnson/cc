@@ -1,14 +1,18 @@
 package org.example.cc.ui
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.example.cc.domain.CardNetwork
@@ -34,6 +38,7 @@ fun WalletScreen(
     val scannerState by scannerViewModel.uiState.collectAsState()
     
     var showScanner by remember { mutableStateOf(false) }
+    var selectedCard by remember { mutableStateOf<CreditCard?>(null) }
     val scope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
@@ -52,37 +57,81 @@ fun WalletScreen(
             }
         }
 
-        Scaffold(
-            topBar = {
-                TopAppBar(title = { Text("Holographic Wallet") })
-            },
-            floatingActionButton = floatingActionButton
-        ) { paddingValues ->
-            LazyColumn(
-                contentPadding = paddingValues,
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(cards) { card ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .holographicTilt(sensorEvent)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Card: ${card.cardNumber}", style = MaterialTheme.typography.titleMedium)
-                            Text("Bank: ${card.bankName}", style = MaterialTheme.typography.bodyMedium)
+        AnimatedContent(
+            targetState = selectedCard,
+            transitionSpec = {
+                // Custom 3D-like transition: Slide and Rotate
+                (fadeIn() + slideInVertically { it / 2 }) togetherWith
+                (fadeOut() + slideOutVertically { -it / 2 })
+            }
+        ) { targetCard ->
+            if (targetCard == null) {
+                Scaffold(
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            title = { 
+                                Text("WALLET", style = SiltAndStone.Typography().displaySmall) 
+                            },
+                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                containerColor = SiltAndStone.Background
+                            )
+                        )
+                    },
+                    bottomBar = {
+                        // Silt & Stone "Connected Pill" Bottom Nav
+                        Surface(
+                            modifier = Modifier
+                                .padding(24.dp)
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .clip(RoundedCornerShape(32.dp)),
+                            color = SiltAndStone.PrimaryContainer,
+                            tonalElevation = 8.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Scan Button
+                                Button(
+                                    onClick = { showScanner = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SiltAndStone.Primary),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Icon(Icons.Filled.Add, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("NEW CARD", style = SiltAndStone.Typography().labelLarge)
+                                }
+                            }
                         }
-                    }
+                    },
+                    containerColor = SiltAndStone.Background
+                ) { paddingValues ->
+                    CylinderStack(
+                        cards = cards,
+                        sensorEvent = sensorEvent,
+                        onCardClick = { selectedCard = it },
+                        modifier = Modifier.padding(paddingValues)
+                    )
                 }
+            } else {
+                CardDetailScreen(
+                    card = targetCard,
+                    sensorEvent = sensorEvent,
+                    onBack = { selectedCard = null },
+                    onSaveNotes = { newNotes ->
+                        repository.updateNotes(targetCard.id, newNotes)
+                    }
+                )
             }
         }
 
         // Version Footer
         Text(
-            text = "v0.3.0-alpha | Phase 3",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+            text = "v0.4.0-alpha | Phase 4",
+            style = SiltAndStone.Typography().bodySmall,
+            color = SiltAndStone.OnBackground.copy(alpha = 0.5f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
@@ -95,37 +144,72 @@ fun WalletScreen(
                     showScanner = false 
                     scannerViewModel.reset()
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color.Transparent,
+                dragHandle = null // Editorial Brutalism: No default handles
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CameraView(
-                        onCardScanned = { result ->
-                            scannerViewModel.onCardDetected(result)
-                            // Auto-insert for now as a demo of detection
-                            scope.launch {
-                                val dummyCard = CreditCard(
-                                    id = Random.nextInt().toString(),
-                                    cardNumber = result.number,
-                                    cardholderName = "Scanned Card",
-                                    expiryDate = result.expiryDate,
-                                    cvv = "###",
-                                    bankName = "Detected Bank",
-                                    network = CardNetwork.VISA,
-                                    type = CardType.CREDIT,
-                                    accentColorHex = "#222222",
-                                    isDetailsOnBack = false
-                                )
-                                repository.insertCard(dummyCard)
-                                showScanner = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    
-                    ScannerOverlay(
-                        sensorEvent = sensorEvent,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = SiltAndStone.SurfaceContainer,
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        val currentScanSide = when (val state = scannerState) {
+                            is ScannerUiState.Scanning -> state.side
+                            else -> ScanSide.FRONT
+                        }
+
+                        CameraView(
+                            onCardScanned = { result ->
+                                scannerViewModel.onCardDetected(result)
+                                
+                                val state = scannerViewModel.uiState.value
+                                if (state is ScannerUiState.Success) {
+                                    val finalCard = state.card
+                                    scope.launch {
+                                        val dummyCard = CreditCard(
+                                            id = Random.nextInt().toString(),
+                                            cardNumber = finalCard.number,
+                                            cardholderName = "Scanned Card",
+                                            expiryDate = finalCard.expiryDate,
+                                            cvv = finalCard.cvv ?: "###",
+                                            bankName = org.example.cc.domain.BankMatcher.match(finalCard.bankName ?: "Detected Bank"),
+                                            network = org.example.cc.domain.CardNetwork.VISA,
+                                            type = org.example.cc.domain.CardType.CREDIT,
+                                            accentColorHex = "#222222",
+                                            isDetailsOnBack = false,
+                                            notes = ""
+                                        )
+                                        repository.insertCard(dummyCard)
+                                        showScanner = false
+                                        selectedCard = dummyCard
+                                    }
+                                }
+                            },
+                            scanSide = currentScanSide,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        ScannerOverlay(
+                            scanSide = currentScanSide,
+                            sensorEvent = sensorEvent,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // Scan Status Text
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (currentScanSide == ScanSide.FRONT) "SCAN FRONT" else "FLIP CARD",
+                                style = SiltAndStone.Typography().headlineMedium,
+                                color = SiltAndStone.OnPrimary
+                            )
+                        }
+                    }
                 }
             }
         }

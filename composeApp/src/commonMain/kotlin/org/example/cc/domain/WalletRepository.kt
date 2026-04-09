@@ -29,8 +29,13 @@ class WalletRepository(private val database: WalletDatabase) {
             network = card.network.name,
             type = card.type.name,
             accentColorHex = card.accentColorHex,
-            isDetailsOnBack = if (card.isDetailsOnBack) 1L else 0L
+            isDetailsOnBack = if (card.isDetailsOnBack) 1L else 0L,
+            notes = card.notes
         )
+    }
+
+    fun updateNotes(id: String, notes: String) {
+        queries.updateCardNotes(notes, id)
     }
 
     fun deleteCard(id: String) {
@@ -49,6 +54,7 @@ fun SavedCardEntity.toDomain(): CreditCard {
         network = CardNetwork.valueOf(network),
         type = CardType.valueOf(type),
         accentColorHex = accentColorHex,
-        isDetailsOnBack = isDetailsOnBack == 1L
+        isDetailsOnBack = isDetailsOnBack == 1L,
+        notes = notes
     )
 }

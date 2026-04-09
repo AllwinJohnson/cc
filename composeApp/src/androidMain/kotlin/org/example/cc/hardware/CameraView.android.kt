@@ -25,8 +25,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
 
+import org.example.cc.ui.ScanSide
+
 @Composable
-actual fun CameraView(onCardScanned: (ScannedCardResult) -> Unit, modifier: Modifier) {
+actual fun CameraView(
+    onCardScanned: (ScannedCardResult) -> Unit,
+    scanSide: ScanSide,
+    modifier: Modifier
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val executor = remember { Executors.newSingleThreadExecutor() }
@@ -74,7 +80,7 @@ actual fun CameraView(onCardScanned: (ScannedCardResult) -> Unit, modifier: Modi
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
                         
-                        imageAnalysis.setAnalyzer(executor, CardAnalyzer { result ->
+                        imageAnalysis.setAnalyzer(executor, CardAnalyzer(scanSide) { result ->
                             previewView.post {
                                 previewView.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                             }
