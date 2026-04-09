@@ -5,15 +5,61 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent as AndroidSensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.hardware.display.DisplayManager
+import android.os.Build
+import android.view.Display
+import android.view.Surface
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-import android.hardware.display.DisplayManager
-import android.view.Display
-import android.view.Surface
-
 class AndroidCardScannerEngine : CardScannerEngine {
     override suspend fun scanCard(): ScannedCardResult? = null
+}
+
+/**
+ * ImageAnalysis.Analyzer that detects card numbers and expiry dates using ML Kit OCR.
+ */
+@OptIn(ExperimentalGetImage::class)
+class CardAnalyzer(
+    private val onResult: (ScannedCardResult) -> Unit
+) : ImageAnalysis.Analyzer {
+    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    
+    // Regex for 16-digit card number (with/without spaces)
+    private val cardNumberRegex = Regex("\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}")
+    // Regex for Expiry Date (MM/YY)
+    private val expiryRegex = Regex("(0[1-9]|1[0-2])\\/([0-9]{2})")
+
+    override fun analyze(imageProxy: ImageProxy) {
+        val mediaImage = imageProxy.image
+        if (mediaImage != null) {
+            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            recognizer.process(image)
+                .addOnSuccessListener { visionText ->
+                    // Extract all text and search for patterns
+                    val allText = visionText.text
+                    
+                    val foundNumber = cardNumberRegex.find(allText)?.value?.replace(Regex("[\\s-]"), "")
+                    val foundExpiry = expiryRegex.find(allText)?.value
+                    
+                    if (foundNumber != null && isLuhnValid(foundNumber) && foundExpiry != null) {
+                        onResult(ScannedCardResult(foundNumber, foundExpiry))
+                    }
+                }
+                .addOnCompleteListener {
+                    imageProxy.close()
+                }
+        } else {
+            imageProxy.close()
+        }
+    }
 }
 
 class AndroidHardwareSensorEngine(private val context: Context) : HardwareSensorEngine, SensorEventListener {
@@ -44,7 +90,6 @@ class AndroidHardwareSensorEngine(private val context: Context) : HardwareSensor
             val rotationMatrix = FloatArray(9)
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
             
-            // Safely get display rotation from any context using DisplayManager
             val rotation = displayManager.getDisplay(Display.DEFAULT_DISPLAY)?.rotation ?: Surface.ROTATION_0
 
             var axisX = SensorManager.AXIS_X
@@ -70,12 +115,10 @@ class AndroidHardwareSensorEngine(private val context: Context) : HardwareSensor
             val orientation = FloatArray(3)
             SensorManager.getOrientation(remappedMatrix, orientation)
 
-            // orientation[0] = azimuth (yaw), [1] = pitch, [2] = roll
             val yaw = orientation[0]
             val pitch = orientation[1]
             val roll = orientation[2]
 
-            // Low-pass filter (Alpha smoothing)
             currentPitch = currentPitch + alpha * (pitch - currentPitch)
             currentRoll = currentRoll + alpha * (roll - currentRoll)
             currentYaw = currentYaw + alpha * (yaw - currentYaw)
