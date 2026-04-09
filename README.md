@@ -38,6 +38,14 @@ Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-mu
 
 ## 📜 Changelog
 
+### [v0.3.0-alpha] - 2026-04-10
+**Phase 3: CameraX & OCR Integration**
+- **Cybernetic Viewfinder**: Implemented an animated, orientation-reactive scanner overlay with haptic "lock-on" feedback.
+- **Real-Time OCR Pipeline**: Integrated CameraX with ML Kit Text Recognition for instant card number and expiry detection.
+- **Luhn Algorithm Validation**: Automated checksum verification for scanned card numbers.
+- **Lifecycle & Permission Management**: Robust handling of Android camera permissions and hardware surface synchronization.
+- **Versioning UI**: Added a subtle version footer tracking to the main screen.
+
 ### [v0.2.0-alpha] - 2026-04-09
 **Phase 2: Sensor Fusion & Motion Engine**
 - **Hardware Sensor Layer**: Implemented `AndroidHardwareSensorEngine` using high-precision `TYPE_ROTATION_VECTOR`.

@@ -47,6 +47,7 @@ kotlin {
                 implementation(libs.androidx.lifecycle.runtimeCompose)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.koin.compose)
+                implementation(libs.koin.compose.viewmodel)
                 implementation(libs.coil3.compose)
                 implementation(libs.sqldelight.coroutines)
                 implementation(libs.kotlinx.datetime)
