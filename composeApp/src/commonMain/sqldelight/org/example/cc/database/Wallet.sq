@@ -1,0 +1,22 @@
+CREATE TABLE SavedCardEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    cardNumber TEXT NOT NULL,
+    cardholderName TEXT NOT NULL,
+    expiryDate TEXT NOT NULL,
+    cvv TEXT NOT NULL,
+    bankName TEXT NOT NULL,
+    network TEXT NOT NULL,
+    type TEXT NOT NULL,
+    accentColorHex TEXT NOT NULL,
+    isDetailsOnBack INTEGER NOT NULL
+);
+
+insertCard:
+INSERT OR REPLACE INTO SavedCardEntity(id, cardNumber, cardholderName, expiryDate, cvv, bankName, network, type, accentColorHex, isDetailsOnBack)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getAllCards:
+SELECT * FROM SavedCardEntity;
+
+deleteCard:
+DELETE FROM SavedCardEntity WHERE id = ?;
