@@ -22,6 +22,7 @@ import org.example.cc.hardware.SensorEvent
 fun HolographicCard(
     card: CreditCard,
     sensorEvent: SensorEvent,
+    isFocused: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -34,7 +35,7 @@ fun HolographicCard(
                 color = SiltAndStone.OutlineVariant,
                 shape = RoundedCornerShape(SiltAndStone.CardCornerRadius.dp)
             )
-            .holographicTilt(sensorEvent)
+            .holographicTilt(sensorEvent, enabled = isFocused)
     ) {
         // Card Content
         Column(

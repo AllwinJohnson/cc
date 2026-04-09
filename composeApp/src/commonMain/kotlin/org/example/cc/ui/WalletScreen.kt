@@ -154,6 +154,11 @@ fun WalletScreen(
                     shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
+                        val currentScanSide = when (val state = scannerState) {
+                            is ScannerUiState.Scanning -> state.side
+                            else -> ScanSide.FRONT
+                        }
+
                         CameraView(
                             onCardScanned = { result ->
                                 scannerViewModel.onCardDetected(result)
@@ -181,13 +186,9 @@ fun WalletScreen(
                                     }
                                 }
                             },
+                            scanSide = currentScanSide,
                             modifier = Modifier.fillMaxSize()
                         )
-                        
-                        val currentScanSide = when (val state = scannerState) {
-                            is ScannerUiState.Scanning -> state.side
-                            else -> ScanSide.FRONT
-                        }
 
                         ScannerOverlay(
                             scanSide = currentScanSide,

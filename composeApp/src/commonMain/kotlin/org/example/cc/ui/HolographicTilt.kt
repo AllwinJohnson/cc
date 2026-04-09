@@ -14,7 +14,7 @@ import org.example.cc.hardware.SensorEvent
  * The tilt follows the device orientation with mass-sensitive smoothing,
  * and the highlight moves opposite to the tilt to simulate real-world light reflection.
  */
-fun Modifier.holographicTilt(event: SensorEvent): Modifier = this
+fun Modifier.holographicTilt(event: SensorEvent, enabled: Boolean = true): Modifier = if (!enabled) this else this
     .graphicsLayer {
         // Use the user-recommended 15f intensity for a balanced weightless feel
         rotationX = -event.pitch * 15f
@@ -27,9 +27,6 @@ fun Modifier.holographicTilt(event: SensorEvent): Modifier = this
         drawContent()
         
         // Linear "Sheen" Gradient
-        // The light moves linearly opposite to the tilt:
-        // Tilt down (positive pitch) -> Highlight moves up (negative Y offset)
-        // Tilt right (positive roll) -> Highlight moves left (negative X offset)
         val shimmerShiftX = -event.roll * size.width * 2f
         val shimmerShiftY = -event.pitch * size.height * 2f
         

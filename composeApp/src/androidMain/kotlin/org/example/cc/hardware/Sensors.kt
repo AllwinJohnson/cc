@@ -18,6 +18,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import org.example.cc.ui.ScanSide
 
 class AndroidCardScannerEngine : CardScannerEngine {
     override suspend fun scanCard(): ScannedCardResult? = null
@@ -26,8 +27,10 @@ class AndroidCardScannerEngine : CardScannerEngine {
 /**
  * ImageAnalysis.Analyzer that detects card numbers and expiry dates using ML Kit OCR.
  */
+
 @OptIn(ExperimentalGetImage::class)
 class CardAnalyzer(
+    private val scanSide: ScanSide,
     private val onResult: (ScannedCardResult) -> Unit
 ) : ImageAnalysis.Analyzer {
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -52,19 +55,25 @@ class CardAnalyzer(
                     val foundExpiry = expiryRegex.find(allText)?.value
                     val potentialBankName = visionText.textBlocks.firstOrNull()?.text?.split("\n")?.firstOrNull()
                     
-                    // Filter CVV candidates: must be 3-4 digits and NOT part of a longer digit string
                     val foundCvv = cvvRegex.findAll(allText)
                         .map { it.value }
                         .firstOrNull { cvv -> 
-                            // Ensure it's not actually part of the card number
                             foundNumber == null || !foundNumber.contains(cvv) 
                         }
                     
-                    if (foundNumber != null && isLuhnValid(foundNumber) && foundExpiry != null) {
-                        onResult(ScannedCardResult(foundNumber, foundExpiry, potentialBankName, foundCvv))
-                    } else if (foundCvv != null) {
-                        // Emit partial result if only CVV is found (Back Scan Mode)
-                        onResult(ScannedCardResult("", "", null, foundCvv))
+                    when (scanSide) {
+                        ScanSide.FRONT -> {
+                            // In Front Mode, ignore CVV (3-digit) patterns
+                            if (foundNumber != null && isLuhnValid(foundNumber) && foundExpiry != null) {
+                                onResult(ScannedCardResult(foundNumber, foundExpiry, potentialBankName, null))
+                            }
+                        }
+                        ScanSide.BACK -> {
+                            // In Back Mode, ignore 16-digit patterns, look for CVV
+                            if (foundCvv != null) {
+                                onResult(ScannedCardResult("", "", null, foundCvv))
+                            }
+                        }
                     }
                 }
                 .addOnCompleteListener {

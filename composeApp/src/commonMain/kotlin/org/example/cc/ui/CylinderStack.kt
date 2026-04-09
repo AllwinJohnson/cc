@@ -83,12 +83,15 @@ fun CylinderStack(
                         
                         rotationX = relativePosition * -40f
                         alpha = 0.6f + (focusFactor * 0.4f)
-                        cameraDistance = 8f * density.density
+                        
+                        // Rigid Body Fix: Unified camera distance
+                        cameraDistance = 12f * density.density
                     }
             ) {
                 HolographicCard(
                     card = card,
                     sensorEvent = sensorEvent,
+                    isFocused = focusFactor > 0.95f,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
