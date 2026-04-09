@@ -37,6 +37,16 @@ Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-mu
 ---
 
 ## 📜 Changelog
+ 
+### [v0.4.0-alpha] - 2026-04-10
+**Phase 4: The "Silt & Stone" Holographic Overhaul**
+- **Cylinder Stack UI**: Transformed the flat wallet list into a high-fidelity 3D rotating wheel with non-linear focus logic ($focusFactor^2$).
+- **Editorial Brutalism Design**: Implemented a comprehensive design system with muted "Silt & Stone" tokens and bundled Space Grotesk typography.
+- **Interactive Details**: Added an expandable card view with custom 3D plane transitions and auto-saving persistence.
+- **Persistence Upgrade**: Migrated SQLDelight schema with a `notes` column, preserving all existing card data.
+- **Intelligence Refinement**: Implemented `BankMatcher` fuzzy logic to improve OCR bank detection from stylized logos.
+- **Hardware-Synced Sheen**: Refined the refractive highlight engine for better cohesion with the new Material tokens.
+
 
 ### [v0.3.0-alpha] - 2026-04-10
 **Phase 3: CameraX & OCR Integration**
