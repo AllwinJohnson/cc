@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.example.cc.domain.CardNetwork
@@ -143,39 +144,70 @@ fun WalletScreen(
                     showScanner = false 
                     scannerViewModel.reset()
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color.Transparent,
+                dragHandle = null // Editorial Brutalism: No default handles
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CameraView(
-                        onCardScanned = { result ->
-                            scannerViewModel.onCardDetected(result)
-                            // Auto-insert for now as a demo of detection
-                            scope.launch {
-                                val dummyCard = CreditCard(
-                                    id = Random.nextInt().toString(),
-                                    cardNumber = result.number,
-                                    cardholderName = "Scanned Card",
-                                    expiryDate = result.expiryDate,
-                                    cvv = "###",
-                                    bankName = org.example.cc.domain.BankMatcher.match(result.bankName ?: "Detected Bank"),
-                                    network = org.example.cc.domain.CardNetwork.VISA,
-                                    type = org.example.cc.domain.CardType.CREDIT,
-                                    accentColorHex = "#222222",
-                                    isDetailsOnBack = false,
-                                    notes = ""
-                                )
-                                repository.insertCard(dummyCard)
-                                showScanner = false
-                                selectedCard = dummyCard // Immediately navigate to details
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    
-                    ScannerOverlay(
-                        sensorEvent = sensorEvent,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = SiltAndStone.SurfaceContainer,
+                    shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CameraView(
+                            onCardScanned = { result ->
+                                scannerViewModel.onCardDetected(result)
+                                
+                                val state = scannerViewModel.uiState.value
+                                if (state is ScannerUiState.Success) {
+                                    scope.launch {
+                                        val dummyCard = CreditCard(
+                                            id = Random.nextInt().toString(),
+                                            cardNumber = result.number,
+                                            cardholderName = "Scanned Card",
+                                            expiryDate = result.expiryDate,
+                                            cvv = "###",
+                                            bankName = org.example.cc.domain.BankMatcher.match(result.bankName ?: "Detected Bank"),
+                                            network = org.example.cc.domain.CardNetwork.VISA,
+                                            type = org.example.cc.domain.CardType.CREDIT,
+                                            accentColorHex = "#222222",
+                                            isDetailsOnBack = false,
+                                            notes = ""
+                                        )
+                                        repository.insertCard(dummyCard)
+                                        showScanner = false
+                                        selectedCard = dummyCard
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        
+                        val currentScanSide = when (val state = scannerState) {
+                            is ScannerUiState.Scanning -> state.side
+                            else -> ScanSide.FRONT
+                        }
+
+                        ScannerOverlay(
+                            scanSide = currentScanSide,
+                            sensorEvent = sensorEvent,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        // Scan Status Text
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (currentScanSide == ScanSide.FRONT) "SCAN FRONT" else "SCAN BACK",
+                                style = SiltAndStone.Typography().headlineMedium,
+                                color = SiltAndStone.OnPrimary
+                            )
+                        }
+                    }
                 }
             }
         }

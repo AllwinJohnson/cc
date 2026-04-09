@@ -1,5 +1,6 @@
 package org.example.cc.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -55,28 +56,33 @@ fun CylinderStack(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable { onCardClick(card) }
                     .onGloballyPositioned { 
                         itemCenterY = it.positionInParent().y + it.size.height / 2f 
                     }
-                    .zIndex(focusFactor) // Center card is on top
+                    .zIndex((cards.size - index).toFloat()) // Top cards overlap bottom ones
                     .graphicsLayer {
-                        // Position Transformations
+                        // All math moved here for performance (only affects Drawing/Layout phase)
+                        val linearFocusFactor = if (containerHeight > 0) {
+                            val center = containerHeight / 2f
+                            val distance = abs(center - itemCenterY)
+                            (1f - (distance / center)).coerceIn(0f, 1f)
+                        } else 1f
+                        
+                        val focusFactor = linearFocusFactor * linearFocusFactor
+                        
                         // Scale 1.1f at center to 0.85f at edges
                         val scale = 0.85f + (focusFactor * 0.25f)
                         scaleX = scale
                         scaleY = scale
                         
                         // RotationX simulates the cylinder curve
-                        // Calculate relative distance from center (-1.0 to 1.0)
                         val relativePosition = if (containerHeight > 0) {
                             (itemCenterY - (containerHeight / 2f)) / (containerHeight / 2f)
                         } else 0f
                         
-                        rotationX = relativePosition * -40f // -20 to 20 approx
-                        
-                        // Alpha fades out distant items
+                        rotationX = relativePosition * -40f
                         alpha = 0.6f + (focusFactor * 0.4f)
-                        
                         cameraDistance = 8f * density.density
                     }
             ) {
