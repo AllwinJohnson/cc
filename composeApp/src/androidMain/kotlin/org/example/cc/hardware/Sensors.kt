@@ -8,11 +8,15 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+import android.view.Surface
+import android.view.WindowManager
+import android.os.Build
+
 class AndroidCardScannerEngine : CardScannerEngine {
     override suspend fun scanCard(): ScannedCardResult? = null
 }
 
-class AndroidHardwareSensorEngine(context: Context) : HardwareSensorEngine, SensorEventListener {
+class AndroidHardwareSensorEngine(private val context: Context) : HardwareSensorEngine, SensorEventListener {
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
@@ -38,8 +42,38 @@ class AndroidHardwareSensorEngine(context: Context) : HardwareSensorEngine, Sens
         if (event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
             val rotationMatrix = FloatArray(9)
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+            
+            // Handle coordinate remapping for Landscape support
+            val rotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                context.display?.rotation ?: Surface.ROTATION_0
+            } else {
+                val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                @Suppress("DEPRECATION")
+                wm.defaultDisplay.rotation
+            }
+
+            var axisX = SensorManager.AXIS_X
+            var axisY = SensorManager.AXIS_Y
+            when (rotation) {
+                Surface.ROTATION_90 -> {
+                    axisX = SensorManager.AXIS_Y
+                    axisY = SensorManager.AXIS_MINUS_X
+                }
+                Surface.ROTATION_180 -> {
+                    axisX = SensorManager.AXIS_MINUS_X
+                    axisY = SensorManager.AXIS_MINUS_Y
+                }
+                Surface.ROTATION_270 -> {
+                    axisX = SensorManager.AXIS_MINUS_Y
+                    axisY = SensorManager.AXIS_X
+                }
+            }
+
+            val remappedMatrix = FloatArray(9)
+            SensorManager.remapCoordinateSystem(rotationMatrix, axisX, axisY, remappedMatrix)
+
             val orientation = FloatArray(3)
-            SensorManager.getOrientation(rotationMatrix, orientation)
+            SensorManager.getOrientation(remappedMatrix, orientation)
 
             // orientation[0] = azimuth (yaw), [1] = pitch, [2] = roll
             val yaw = orientation[0]
