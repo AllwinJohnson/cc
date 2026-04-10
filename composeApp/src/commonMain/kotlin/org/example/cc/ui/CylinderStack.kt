@@ -36,7 +36,12 @@ fun CylinderStack(
             .onGloballyPositioned { 
                 containerHeight = it.size.height.toFloat() 
             },
-        contentPadding = PaddingValues(vertical = 100.dp, horizontal = 16.dp),
+        contentPadding = PaddingValues(
+            top = 400.dp, // Reachable first card focus
+            bottom = 400.dp, // Reachable last card focus
+            start = 16.dp,
+            end = 16.dp
+        ),
         verticalArrangement = Arrangement.spacedBy((-120).dp) // Overlap cards
     ) {
         itemsIndexed(cards) { index, card ->
@@ -60,31 +65,24 @@ fun CylinderStack(
                     .onGloballyPositioned { 
                         itemCenterY = it.positionInParent().y + it.size.height / 2f 
                     }
-                    .zIndex((cards.size - index).toFloat()) // Top cards overlap bottom ones
+                    // CRITICAL FIX 1: Z-Index driven by focus, not list position
+                    .zIndex(focusFactor * 100f) 
                     .graphicsLayer {
-                        // All math moved here for performance (only affects Drawing/Layout phase)
-                        val linearFocusFactor = if (containerHeight > 0) {
-                            val center = containerHeight / 2f
-                            val distance = abs(center - itemCenterY)
-                            (1f - (distance / center)).coerceIn(0f, 1f)
-                        } else 1f
+                        val cleanRelative = if (containerHeight > 0) {
+                            ((itemCenterY - (containerHeight / 2f)) / (containerHeight / 2f)).coerceIn(-1f, 1f)
+                        } else 0f
                         
-                        val focusFactor = linearFocusFactor * linearFocusFactor
+                        // Reduced tilt for subtle depth
+                        rotationX = cleanRelative * -15f 
                         
-                        // Scale 1.1f at center to 0.85f at edges
-                        val scale = 0.85f + (focusFactor * 0.25f)
+                        // CRITICAL FIX 2: Zero translationY so spacedBy(-120.dp) works correctly
+                        translationY = 0f 
+                        
+                        val scale = 0.85f + (focusFactor * 0.15f)
                         scaleX = scale
                         scaleY = scale
                         
-                        // RotationX simulates the cylinder curve
-                        val relativePosition = if (containerHeight > 0) {
-                            (itemCenterY - (containerHeight / 2f)) / (containerHeight / 2f)
-                        } else 0f
-                        
-                        rotationX = relativePosition * -40f
-                        alpha = 0.6f + (focusFactor * 0.4f)
-                        
-                        // Rigid Body Fix: Unified camera distance
+                        alpha = 1.0f 
                         cameraDistance = 12f * density.density
                     }
             ) {

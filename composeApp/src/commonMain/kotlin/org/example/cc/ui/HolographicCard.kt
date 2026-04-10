@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -25,11 +26,19 @@ fun HolographicCard(
     isFocused: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    val cardGradient = Brush.linearGradient(
+        colors = listOf(SiltAndStone.OnSurface, SiltAndStone.Primary)
+    )
+
     Box(
         modifier = modifier
             .aspectRatio(SiltAndStone.AspectRatio)
-            .clip(RoundedCornerShape(SiltAndStone.CardCornerRadius.dp))
-            .background(SiltAndStone.Primary)
+            // CRITICAL FIX 3: Hardware-accelerated shape clipping for smooth 3D edges
+            .graphicsLayer {
+                shape = RoundedCornerShape(SiltAndStone.CardCornerRadius.dp)
+                clip = true
+            }
+            .background(cardGradient)
             .border(
                 width = 1.dp,
                 color = SiltAndStone.OutlineVariant,

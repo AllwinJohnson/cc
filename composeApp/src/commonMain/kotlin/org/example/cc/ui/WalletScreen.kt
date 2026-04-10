@@ -51,6 +51,7 @@ fun WalletScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         val floatingActionButton: @Composable () -> Unit = {
             FloatingActionButton(onClick = {
+                scannerViewModel.startScanning() // CRITICAL FIX
                 showScanner = true
             }) {
                 Icon(Icons.Filled.Add, contentDescription = "Scan Card")
@@ -95,7 +96,10 @@ fun WalletScreen(
                             ) {
                                 // Scan Button
                                 Button(
-                                    onClick = { showScanner = true },
+                                    onClick = { 
+                                        scannerViewModel.startScanning() // CRITICAL FIX
+                                        showScanner = true 
+                                    },
                                     colors = ButtonDefaults.buttonColors(containerColor = SiltAndStone.Primary),
                                     shape = RoundedCornerShape(24.dp)
                                 ) {

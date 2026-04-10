@@ -31,16 +31,17 @@ class ScannerViewModel : ViewModel() {
         if (currentState is ScannerUiState.Scanning) {
             when (currentState.side) {
                 ScanSide.FRONT -> {
-                    // Front scan must have number and expiry
-                    if (result.number.length >= 15 && result.expiryDate.isNotEmpty()) {
+                    val cleanNumber = result.number.filter { it.isDigit() }
+                    // Only require the 15+ digit card number to lock the Front
+                    if (cleanNumber.length >= 15) {
                         capturedFront = result
                         _uiState.value = ScannerUiState.Scanning(ScanSide.BACK)
                     }
                 }
                 ScanSide.BACK -> {
-                    // Back scan must have CVV (3-4 digits)
-                    if (result.cvv != null && result.cvv.length in 3..4) {
-                        val finalResult = capturedFront?.copy(cvv = result.cvv) ?: result
+                    val cleanCvv = result.cvv?.filter { it.isDigit() }
+                    if (cleanCvv != null && cleanCvv.length in 3..4) {
+                        val finalResult = capturedFront?.copy(cvv = cleanCvv) ?: result
                         _uiState.value = ScannerUiState.Success(finalResult)
                     }
                 }
