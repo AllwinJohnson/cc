@@ -1,6 +1,7 @@
 package org.example.cc.ui
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -167,24 +168,35 @@ fun WalletScreen(
                             onCardScanned = { result ->
                                 scannerViewModel.onCardDetected(result)
                                 
-                                val state = scannerViewModel.uiState.value
-                                if (state is ScannerUiState.Success) {
-                                    val finalCard = state.card
-                                    scope.launch {
-                                        val dummyCard = CreditCard(
-                                            id = Random.nextInt().toString(),
-                                            cardNumber = finalCard.number,
-                                            cardholderName = "Scanned Card",
-                                            expiryDate = finalCard.expiryDate,
-                                            cvv = finalCard.cvv ?: "###",
-                                            bankName = org.example.cc.domain.BankMatcher.match(finalCard.bankName ?: "Detected Bank"),
-                                            network = org.example.cc.domain.CardNetwork.VISA,
-                                            type = org.example.cc.domain.CardType.CREDIT,
-                                            accentColorHex = "#222222",
-                                            isDetailsOnBack = false,
-                                            notes = ""
-                                        )
-                                        repository.insertCard(dummyCard)
+                                    val state = scannerViewModel.uiState.value
+                                    if (state is ScannerUiState.Success) {
+                                        val finalCard = state.card
+                                        scope.launch {
+                                            val networkPrefix = finalCard.number.firstOrNull()
+                                            val detectedNetwork = when (networkPrefix) {
+                                                '4' -> org.example.cc.domain.CardNetwork.VISA
+                                                '5' -> org.example.cc.domain.CardNetwork.MASTERCARD
+                                                '3' -> org.example.cc.domain.CardNetwork.AMEX
+                                                else -> org.example.cc.domain.CardNetwork.VISA
+                                            }
+
+                                            val dummyCard = CreditCard(
+                                                id = kotlin.random.Random.nextInt().toString(),
+                                                cardNumber = finalCard.number,
+                                                cardholderName = finalCard.cardholderName ?: "a JOHaaaNSON",
+                                                expiryDate = finalCard.expiryDate,
+                                                cvv = finalCard.cvv ?: "###",
+                                                bankName = finalCard.bankName ?: "FEDEaaaRAL aBAaNK",
+                                                network = detectedNetwork,
+                                                type = org.example.cc.domain.CardType.CREDIT,
+                                                accentColorHex = "#222222",
+                                                isDetailsOnBack = false,
+                                                notes = ""
+                                            )
+                                            repository.insertCard(dummyCard)
+                                        
+                                        // CRITICAL FIX: Reset the state immediately to prevent infinite loop inserts
+                                        scannerViewModel.resetToIdle() 
                                         showScanner = false
                                         selectedCard = dummyCard
                                     }
@@ -207,11 +219,16 @@ fun WalletScreen(
                                 .padding(top = 48.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = if (currentScanSide == ScanSide.FRONT) "SCAN FRONT" else "FLIP CARD",
-                                style = SiltAndStone.Typography().headlineMedium,
-                                color = SiltAndStone.OnPrimary
-                            )
+                        Text(
+                            text = if (currentScanSide == ScanSide.FRONT) "SCAN FRONT (TAP TO SKIP)" else "FLIP CARD",
+                            style = SiltAndStone.Typography().headlineMedium,
+                            color = SiltAndStone.OnPrimary,
+                            modifier = Modifier.clickable {
+                                if (currentScanSide == ScanSide.FRONT) {
+                                    scannerViewModel.forceFlip()
+                                }
+                            }
+                        )
                         }
                     }
                 }

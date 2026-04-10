@@ -32,21 +32,46 @@ class ScannerViewModel : ViewModel() {
             when (currentState.side) {
                 ScanSide.FRONT -> {
                     val cleanNumber = result.number.filter { it.isDigit() }
-                    // Only require the 15+ digit card number to lock the Front
-                    if (cleanNumber.length >= 15) {
+                    
+                    // Allow lock if we see 15+ digits OR if we detect a Bank Name (Modern Card)
+                    val hasNumbers = cleanNumber.length >= 15
+                    val hasBank = !result.bankName.isNullOrEmpty()
+                    
+                    if (hasNumbers || hasBank) {
                         capturedFront = result
                         _uiState.value = ScannerUiState.Scanning(ScanSide.BACK)
                     }
                 }
                 ScanSide.BACK -> {
+                    val cleanNumber = result.number.filter { it.isDigit() }
                     val cleanCvv = result.cvv?.filter { it.isDigit() }
+                    
+                    // The back scan MUST have the CVV
                     if (cleanCvv != null && cleanCvv.length in 3..4) {
-                        val finalResult = capturedFront?.copy(cvv = cleanCvv) ?: result
+                        
+                        // Merge the data! Take the numbers/expiry from the back if they were missing on the front.
+                        val finalResult = capturedFront?.copy(
+                            number = if (cleanNumber.length >= 15) cleanNumber else (capturedFront?.number ?: ""),
+                            cvv = cleanCvv,
+                            expiryDate = if (result.expiryDate.isNotEmpty()) result.expiryDate else (capturedFront?.expiryDate ?: "")
+                        ) ?: result
+                        
                         _uiState.value = ScannerUiState.Success(finalResult)
                     }
                 }
             }
         }
+    }
+
+    fun forceFlip() {
+        if (_uiState.value is ScannerUiState.Scanning) {
+            _uiState.value = ScannerUiState.Scanning(ScanSide.BACK)
+        }
+    }
+
+    fun resetToIdle() {
+        _uiState.value = ScannerUiState.Idle
+        capturedFront = null
     }
 
 

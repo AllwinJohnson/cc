@@ -6,7 +6,8 @@ data class ScannedCardResult(
     val number: String, 
     val expiryDate: String,
     val bankName: String? = null,
-    val cvv: String? = null
+    val cvv: String? = null,
+    val cardholderName: String? = null // CRITICAL FIX
 )
 
 interface CardScannerEngine {
